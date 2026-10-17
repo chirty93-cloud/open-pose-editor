@@ -23,6 +23,18 @@ https://user-images.githubusercontent.com/18410894/224073965-c782a05f-0a20-41cf-
 
 - **Adjust Body Parameters**: Adjust various body parameters such as height, weight, and limb lengths to create a custom 3D model.
 # Usage
+### Solid mesh bodies:
+
+- Open **Body → Add Mannequin** to add a solid, poseable mannequin.
+- Select an existing skeleton and use **Body → Attach Mesh Body** to give it a solid body. With one skeleton, selection is optional.
+- Use the existing joint rotation, movement, and **Body Parameters** controls to pose and resize the mannequin. Click a mesh limb to select its joint.
+- **Body → Remove Mesh Body** returns the selected body to its skeleton. Attachment and removal support Undo/Redo.
+- Mesh bodies are preserved when duplicating and saving/loading scenes. The pose map stays a skeleton; depth, normal, and edge maps include the solid body.
+
+These are built-in mannequin meshes; importing custom mesh files is not currently supported.
+
+For development, use Node 16 and pnpm 7 (as in CI), run `pnpm install --frozen-lockfile`, then `pnpm dev`. Validate with `pnpm build` and `pnpm exec tsx tests/mesh-body.test.ts`.
+
 ### Scene Navigation:
 - **Rotate Scene**: Click and hold the blank space, then move the mouse while holding down the left mouse button.
 - **Move Scene**: Click and hold the blank space, then move the mouse while holding down the right mouse button.

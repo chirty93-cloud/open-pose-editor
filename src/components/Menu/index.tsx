@@ -49,7 +49,52 @@ const MenubarDemo: React.FC<{
     }, [editor])
 
     return (
-        <Menubar.Root className={MenubarRoot} style={style}>
+        <Menubar.Root
+            className={MenubarRoot}
+            style={style}
+            onValueChange={forceUpdate}
+        >
+            <Menubar.Menu>
+                <Menubar.Trigger className={MenubarTrigger}>
+                    {i18n.t('Body')}
+                </Menubar.Trigger>
+                <Menubar.Portal>
+                    <Menubar.Content
+                        className={MenubarContent}
+                        align="start"
+                        sideOffset={5}
+                    >
+                        <Menubar.Item
+                            className={MenubarItem}
+                            onSelect={() => editor.AddMannequin()}
+                        >
+                            {i18n.t('Add Mannequin')}
+                        </Menubar.Item>
+                        <Menubar.Separator className={MenubarSeparator} />
+                        <Menubar.Item
+                            className={MenubarItem}
+                            disabled={
+                                !editor.getSelectedBody() &&
+                                editor.GetBodies().length !== 1
+                            }
+                            onSelect={() => editor.SetSelectedMeshBody(true)}
+                        >
+                            {i18n.t('Attach Mesh Body')}
+                        </Menubar.Item>
+                        <Menubar.Item
+                            className={MenubarItem}
+                            disabled={
+                                !editor.getSelectedBody() &&
+                                editor.GetBodies().length !== 1
+                            }
+                            onSelect={() => editor.SetSelectedMeshBody(false)}
+                        >
+                            {i18n.t('Remove Mesh Body')}
+                        </Menubar.Item>
+                    </Menubar.Content>
+                </Menubar.Portal>
+            </Menubar.Menu>
+
             <Menubar.Menu>
                 <Menubar.Trigger className={MenubarTrigger}>
                     {i18n.t('File')}

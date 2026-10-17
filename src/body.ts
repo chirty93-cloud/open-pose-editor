@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { Bone, Object3D } from 'three'
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils'
 import type { TupleToUnion } from 'type-fest'
+import { HasMeshBody, SetMeshBody, UpdateMeshBody } from './mesh-body'
 import {
     FindObjectItem,
     GetLocalPosition,
@@ -446,6 +447,7 @@ const ControlablePart = [
 type ControlPartName = TupleToUnion<typeof ControlablePart>
 
 export interface BodyData {
+    meshBody?: boolean
     position?: ReturnType<THREE.Vector3['toArray']>
     rotation?: ReturnType<THREE.Euler['toArray']>
     scale?: ReturnType<THREE.Vector3['toArray']>
@@ -1059,6 +1061,7 @@ export class BodyControlor {
     GetBodyData(): BodyData {
         const o = this.part['torso']
         const result: BodyData = {
+            meshBody: HasMeshBody(o),
             position: o.position.toArray(),
             rotation: o.rotation.toArray(),
             scale: o.scale.toArray(),
@@ -1117,6 +1120,7 @@ export class BodyControlor {
         if (data.position) body.position.fromArray(data.position)
         if (data.rotation) body.rotation.fromArray(data.rotation as any)
         if (data.scale) body.scale.fromArray(data.scale)
+        SetMeshBody(body, data.meshBody === true)
     }
 
     UpdateBones(thickness = this.BoneThickness) {
@@ -1288,6 +1292,7 @@ export class BodyControlor {
     Update() {
         this.ResetAllTargetsPosition()
         this.UpdateBones()
+        UpdateMeshBody(this.body)
         this.part['torso'].updateMatrixWorld(true)
     }
 }

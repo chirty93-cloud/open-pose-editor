@@ -1,5 +1,11 @@
 import * as THREE from 'three'
 import {
+    HasMeshBody,
+    IsMeshBodyPart,
+    SetMeshBody,
+    UpdateMeshBody,
+} from './mesh-body'
+import {
     Bone,
     Material,
     Mesh,
@@ -558,6 +564,7 @@ export class BodyEditor {
 
     render(width: number = this.Width, height: number = this.Height) {
         this.updateSelectedBodyIKSolver()
+        this.GetBodies().forEach(UpdateMeshBody)
 
         this.renderer.setViewport(0, 0, width, height)
         this.renderer.setScissor(0, 0, width, height)
@@ -951,8 +958,10 @@ export class BodyEditor {
         const map = new Map<Object3D, Object3D | null>()
 
         this.GetBodies().forEach((o) => {
-            o.traverse((child) => {
-                if (IsExtremities(child?.name)) {
+            const parts: Object3D[] = []
+            o.traverse((child) => parts.push(child))
+            parts.forEach((child) => {
+                if (IsExtremities(child?.name) || IsMeshBodyPart(child)) {
                     map.set(child, child.parent)
                     this.scene.attach(child)
                 } else if (child?.name === 'red_point') {
@@ -994,8 +1003,10 @@ export class BodyEditor {
     changeHandMaterialTraverse(type: 'depth' | 'normal' | 'phone') {
         const map = new Map<THREE.Mesh, Material | Material[]>()
         this.scene.traverse((child) => {
-            if (!IsExtremities(child.name)) return
-            const o = GetExtremityMesh(child) as THREE.Mesh
+            if (!IsExtremities(child.name) && !IsMeshBodyPart(child)) return
+            const o = IsMeshBodyPart(child)
+                ? (child as THREE.Mesh)
+                : (GetExtremityMesh(child) as THREE.Mesh)
             map.set(o, o.material)
             if (type == 'depth') o.material = new MeshDepthMaterial()
             else if (type == 'normal') o.material = new MeshNormalMaterial()
@@ -1039,6 +1050,10 @@ export class BodyEditor {
     changeCamera() {
         let hands: THREE.Mesh[] = []
         this.scene.traverse((o) => {
+            if (IsMeshBodyPart(o)) {
+                hands.push(o as THREE.Mesh)
+                return
+            }
             if (this.OnlyHand) {
                 if (IsHand(o?.name)) hands.push(o as THREE.Mesh)
             } else {
@@ -1049,21 +1064,16 @@ export class BodyEditor {
         // filter object in frustum
         hands = this.objectInView(hands)
 
-        const cameraPos = new THREE.Vector3()
-        this.camera.getWorldPosition(cameraPos)
-
-        const handsPos = hands.map((o) => {
-            const cameraPos = new THREE.Vector3()
-            o.getWorldPosition(cameraPos)
-            return cameraPos
+        const handsDis = hands.flatMap((object) => {
+            const sphere = this.getBouningSphere(object)
+            const distance = this.getZDistanceFromCamera(sphere.center)
+            return [distance - sphere.radius, distance + sphere.radius]
         })
 
-        const handsDis = handsPos.map((pos) => {
-            return this.getZDistanceFromCamera(pos)
-        })
-
-        const minDis = Math.min(...handsDis)
-        const maxDis = Math.max(...handsDis)
+        const minDis = handsDis.length
+            ? Math.min(...handsDis)
+            : this.camera.near
+        const maxDis = handsDis.length ? Math.max(...handsDis) : this.camera.far
 
         const saveNear = this.camera.near
         const saveFar = this.camera.far
@@ -1204,6 +1214,38 @@ export class BodyEditor {
             payload: result,
         })
         return result
+    }
+
+    AddMannequin() {
+        const body = CloneBody()
+        if (!body) return
+        SetMeshBody(body, true)
+        body.position.x += this.GetBodies().length * 45
+        this.scene.add(body)
+        this.pushCommand(this.CreateAddBodyCommand(body))
+        this.transformControl.setMode('translate')
+        this.transformControl.attach(body)
+        this.triggerSelectEvent(body)
+    }
+
+    SetSelectedMeshBody(enabled: boolean) {
+        const body =
+            this.getSelectedBody() ??
+            (this.GetBodies().length === 1 ? this.GetBodies()[0] : null)
+        if (!body || HasMeshBody(body) === enabled) return
+        const previous = HasMeshBody(body)
+        const apply = (value: boolean) => {
+            // Meshes can be selected through their parent joint; detach before removing them.
+            this.DetachTransfromControl()
+            SetMeshBody(body, value)
+            this.transformControl.attach(body)
+            this.triggerSelectEvent(body)
+        }
+        apply(enabled)
+        this.pushCommand({
+            execute: () => apply(enabled),
+            undo: () => apply(previous),
+        })
     }
 
     CopySelectedBody() {

@@ -1,4 +1,8 @@
 {
+    "Body": "Body",
+    "Add Mannequin": "Add Mannequin",
+    "Attach Mesh Body": "Attach Mesh Body",
+    "Remove Mesh Body": "Remove Mesh Body",
     "Width": "Width",
     "Height": "Height",
     "Generate Skeleton/Depth/Normal/Canny Map": "Generate Skeleton/Depth/Normal/Canny Map",
